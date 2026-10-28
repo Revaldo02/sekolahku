@@ -48,7 +48,23 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
-  // Baca peran dari database, bukan dari input pengguna.
+  const aturanPeran: Record<string, string[]> = {
+    '/admin': ['admin'],
+    '/guru': ['admin', 'teacher'],
+    '/siswa': ['admin', 'student'],
+    '/orang-tua': ['admin', 'parent'],
+  }
+
+  const areaTerbatas = Object.keys(aturanPeran).find(
+    (area) => path === area || path.startsWith(`${area}/`)
+  )
+
+  // Halaman utama dan halaman umum tidak perlu profil untuk dirender.
+  // Pemeriksaan profil hanya dilakukan saat pengguna membuka area berbasis peran.
+  if (!areaTerbatas) {
+    return response
+  }
+
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role')
@@ -61,18 +77,7 @@ export async function middleware(request: NextRequest) {
     })
   }
 
-  const aturanPeran: Record<string, string[]> = {
-    '/admin': ['admin'],
-    '/guru': ['admin', 'teacher'],
-    '/siswa': ['admin', 'student'],
-    '/orang-tua': ['admin', 'parent'],
-  }
-
-  const areaTerbatas = Object.keys(aturanPeran).find(
-    (area) => path === area || path.startsWith(`${area}/`)
-  )
-
-  if (areaTerbatas && !aturanPeran[areaTerbatas].includes(profile.role)) {
+  if (!aturanPeran[areaTerbatas].includes(profile.role)) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
