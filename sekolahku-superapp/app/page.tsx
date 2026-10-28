@@ -23,6 +23,7 @@ const services = [
 export default function HomePage() {
   const router = useRouter()
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [accountName, setAccountName] = useState<string | null>(null)
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
@@ -41,6 +42,8 @@ export default function HomePage() {
           router.replace('/login')
           return
         }
+        const metadataName = typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name.trim() : ''
+        if (alive && metadataName) setAccountName(metadataName)
         const { data: userProfile, error: profileError } = await supabase
           .from('profiles').select('full_name, role').eq('id', user.id).maybeSingle()
         if (profileError) throw profileError
@@ -75,7 +78,8 @@ export default function HomePage() {
     router.refresh()
   }
 
-  const displayName = profile?.full_name?.trim() || 'Pengguna SekolahKu'
+  const rawDisplayName = profile?.full_name?.trim() || accountName?.trim() || 'Pengguna SekolahKu'
+  const displayName = rawDisplayName === 'Pengguna SekolahKu' ? rawDisplayName : rawDisplayName.charAt(0).toLocaleUpperCase('id-ID') + rawDisplayName.slice(1)
   const role = roleLabels[profile?.role ?? ''] || 'Pengguna'
   const initials = displayName.split(/\\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()
   const visibleServices = services.filter(item => `${item.title} ${item.desc}`.toLowerCase().includes(search.toLowerCase()))
