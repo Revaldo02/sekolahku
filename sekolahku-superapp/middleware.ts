@@ -31,10 +31,11 @@ export async function middleware(request: NextRequest) {
   const { data: { user }, error } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
   const halamanPublik =
-    path === '/login' ||
-    path === '/daftar' ||
-    path.startsWith('/auth/')
-
+  path === '/login' ||
+  path === '/daftar' ||
+  path === '/lupa-sandi' ||
+  path === '/reset-password' ||
+  path.startsWith('/auth/')
   if (error || !user) {
     if (halamanPublik) return response
 
