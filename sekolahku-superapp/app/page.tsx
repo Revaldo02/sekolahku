@@ -47,11 +47,19 @@ export default function HomePage() {
         if (alive && metadataName) setAccountName(metadataName)
         const { data: userProfile, error: profileError } = await supabase
           .from('profiles').select('full_name, role').eq('id', user.id).maybeSingle()
-        if (profileError) throw profileError
-        if (!userProfile) {
-          setError('Profil akun belum tersedia. Hubungi administrator sekolah untuk memeriksa profil akun.')
+        // Primary source is the user's own profile row. If RLS or a stale row
+        // prevents reading it, ask the restricted current-user RPC for the role.
+        let resolvedProfile = userProfile as Profile | null
+        if (profileError || !resolvedProfile?.role) {
+          const { data: roleData } = await supabase.rpc('current_user_role')
+          if (typeof roleData === 'string' && roleData.trim()) {
+            resolvedProfile = { full_name: resolvedProfile?.full_name ?? metadataName ?? null, role: roleData }
+          }
+        }
+        if (!resolvedProfile) {
+          setError('Profil akun belum tersedia. Keluar lalu masuk kembali. Jika masih terjadi, hubungi administrator sekolah.')
         } else if (alive) {
-          setProfile(userProfile as Profile)
+          setProfile(resolvedProfile)
         }
         const { data: notices, error: noticesError } = await supabase
           .from('announcements').select('id, title, body, created_at')
