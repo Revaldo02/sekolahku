@@ -49,6 +49,9 @@ export default function LoginPage() {
           {loading ? 'Memproses...' : 'Masuk'}
         </button>
       </form>
+      <p>
+        <Link href="/lupa-sandi">Lupa kata sandi?</Link>
+        </p>
       {pesan && <p role="alert">{pesan}</p>}
       <p>Belum punya akun? <Link href="/daftar">Daftar di sini</Link></p>
     </main>
