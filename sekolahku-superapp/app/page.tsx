@@ -1,75 +1,143 @@
-"use client";
+'use client'
 
-import { useMemo, useState } from "react";
-import {
-  Activity, Bell, BookOpen, CalendarDays, CheckCircle2, ChevronDown, ChevronRight,
-  ClipboardCheck, Clock3, GraduationCap, Grid2X2, HelpCircle, Home, Menu,
-  MessageCircle, Search, Settings, ShieldCheck, Sparkles, Users, Wallet, X,
-  FileText, LibraryBig, Bus, Utensils, CalendarCheck, UserRound, Megaphone
-} from "lucide-react";
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { getSupabase } from '@/lib/supabase'
+import { Activity, Bell, BookOpen, CalendarDays, CheckCircle2, ChevronRight, ClipboardCheck, FileText, GraduationCap, Grid2X2, Home, LogOut, Menu, Megaphone, MessageCircle, Search, Settings, ShieldCheck, UserRound, Wallet, X } from 'lucide-react'
 
-type Service = { title: string; desc: string; icon: typeof BookOpen; color: string; group: string };
+type Profile = { full_name: string | null; role: string | null }
+type Announcement = { id: string; title: string; body: string; created_at: string }
 
-const services: Service[] = [
-  { title: "Jadwal Pelajaran", desc: "Lihat jadwal kelas hari ini", icon: CalendarDays, color: "blue", group: "Akademik" },
-  { title: "Kehadiran", desc: "Pantau presensi harian", icon: ClipboardCheck, color: "green", group: "Akademik" },
-  { title: "Nilai & Rapor", desc: "Ringkasan hasil belajar", icon: GraduationCap, color: "purple", group: "Akademik" },
-  { title: "Tugas Sekolah", desc: "Tugas dan tenggat terdekat", icon: FileText, color: "orange", group: "Akademik" },
-  { title: "Kalender Sekolah", desc: "Agenda dan kegiatan sekolah", icon: CalendarCheck, color: "pink", group: "Informasi" },
-  { title: "Pengumuman", desc: "Informasi resmi sekolah", icon: Megaphone, color: "yellow", group: "Informasi" },
-  { title: "Perpustakaan", desc: "Jelajahi koleksi buku", icon: LibraryBig, color: "teal", group: "Layanan" },
-  { title: "Pembayaran", desc: "Informasi tagihan sekolah", icon: Wallet, color: "green", group: "Layanan" },
-  { title: "Komunikasi", desc: "Hubungi wali kelas", icon: MessageCircle, color: "blue", group: "Layanan" },
-  { title: "Data Siswa", desc: "Profil dan informasi siswa", icon: UserRound, color: "purple", group: "Administrasi" },
-  { title: "Antar-Jemput", desc: "Informasi transportasi", icon: Bus, color: "orange", group: "Layanan" },
-  { title: "Kantin Sehat", desc: "Menu dan informasi kantin", icon: Utensils, color: "pink", group: "Layanan" }
-];
-
-const announcements = [
-  { tag: "Akademik", title: "Pengumpulan tugas proyek kelas", detail: "Pastikan tugas dikumpulkan sesuai jadwal yang ditentukan guru.", date: "Hari ini" },
-  { tag: "Kegiatan", title: "Persiapan kegiatan Jumat Bersih", detail: "Seluruh siswa diharapkan membawa perlengkapan kebersihan.", date: "Besok" },
-  { tag: "Informasi", title: "Pembaruan informasi orang tua", detail: "Periksa kembali nomor kontak wali murid melalui wali kelas.", date: "24 Okt" }
-];
+const roleLabels: Record<string, string> = { admin: 'Administrator', teacher: 'Guru', student: 'Siswa', parent: 'Orang Tua' }
+const services = [
+  { title: 'Jadwal Pelajaran', desc: 'Jadwal kelas dan mata pelajaran', icon: CalendarDays },
+  { title: 'Kehadiran', desc: 'Catatan presensi', icon: ClipboardCheck },
+  { title: 'Nilai & Rapor', desc: 'Hasil belajar siswa', icon: GraduationCap },
+  { title: 'Tugas Sekolah', desc: 'Tugas dan tenggat', icon: FileText },
+  { title: 'Pengumuman', desc: 'Informasi resmi sekolah', icon: Megaphone },
+  { title: 'Pembayaran', desc: 'Informasi tagihan sekolah', icon: Wallet },
+  { title: 'Komunikasi', desc: 'Hubungi pihak sekolah', icon: MessageCircle },
+  { title: 'Data Siswa', desc: 'Informasi siswa', icon: UserRound },
+]
 
 export default function HomePage() {
-  const [activeNav, setActiveNav] = useState("Beranda");
-  const [search, setSearch] = useState("");
-  const [showAll, setShowAll] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [notice, setNotice] = useState("");
-  const filteredServices = useMemo(() => services.filter(s => `${s.title} ${s.desc} ${s.group}`.toLowerCase().includes(search.toLowerCase())), [search]);
-  const navItems = [
-    { label: "Beranda", icon: Home }, { label: "Akademik", icon: BookOpen },
-    { label: "Layanan", icon: Grid2X2 }, { label: "Komunikasi", icon: MessageCircle }
-  ];
-  const handleService = (title: string) => setNotice(`${title}: fitur ini sudah disiapkan pada tampilan awal. Integrasi data dan akun akan ditambahkan pada tahap berikutnya.`);
+  const router = useRouter()
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [announcements, setAnnouncements] = useState<Announcement[]>([])
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [signingOut, setSigningOut] = useState(false)
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  useEffect(() => {
+    let alive = true
+    async function loadDashboard() {
+      try {
+        const supabase = getSupabase()
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+        if (authError || !user) {
+          router.replace('/login')
+          return
+        }
+        const { data: userProfile, error: profileError } = await supabase
+          .from('profiles').select('full_name, role').eq('id', user.id).maybeSingle()
+        if (profileError) throw profileError
+        if (!userProfile) {
+          setError('Profil akun belum tersedia. Hubungi administrator sekolah untuk memeriksa profil akun.')
+        } else if (alive) {
+          setProfile(userProfile as Profile)
+        }
+        const { data: notices, error: noticesError } = await supabase
+          .from('announcements').select('id, title, body, created_at')
+          .eq('published', true).order('created_at', { ascending: false }).limit(5)
+        if (!noticesError && alive) setAnnouncements((notices ?? []) as Announcement[])
+      } catch {
+        if (alive) setError('Data belum dapat dimuat. Periksa koneksi internet lalu muat ulang halaman.')
+      } finally {
+        if (alive) setLoading(false)
+      }
+    }
+    loadDashboard()
+    return () => { alive = false }
+  }, [router])
+
+  async function logout() {
+    setSigningOut(true)
+    const { error: logoutError } = await getSupabase().auth.signOut()
+    if (logoutError) {
+      setNotice('Belum berhasil keluar. Coba lagi.')
+      setSigningOut(false)
+      return
+    }
+    router.replace('/login')
+    router.refresh()
+  }
+
+  const displayName = profile?.full_name?.trim() || 'Pengguna SekolahKu'
+  const role = roleLabels[profile?.role ?? ''] || 'Pengguna'
+  const initials = displayName.split(/\\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()
+  const visibleServices = services.filter(item => `${item.title} ${item.desc}`.toLowerCase().includes(search.toLowerCase()))
+
   return (
-    <main className="app-shell">
-      <aside className={`sidebar ${menuOpen ? "sidebar-open" : ""}`}>
-        <div className="brand"><div className="brand-mark"><GraduationCap size={25}/></div><div><strong>Sekolah<span>Ku</span></strong><small>PORTAL SEKOLAH TERPADU</small></div><button className="close-menu" onClick={() => setMenuOpen(false)} aria-label="Tutup menu"><X size={20}/></button></div>
-        <div className="school-switch"><div className="school-avatar">SK</div><div className="school-copy"><b>SekolahKu Demo</b><small>Portal sekolah</small></div><ChevronDown size={16}/></div>
-        <p className="nav-caption">MENU UTAMA</p>
-        <nav className="main-nav">{navItems.map(item => { const Icon = item.icon; return <button key={item.label} className={`nav-item ${activeNav === item.label ? "active" : ""}`} onClick={() => {setActiveNav(item.label); setMenuOpen(false); if(item.label !== "Beranda") setNotice(`Bagian ${item.label} akan dikembangkan pada tahap berikutnya.`);}}><Icon size={19}/><span>{item.label}</span>{item.label === "Komunikasi" && <i className="nav-dot"/>}</button>})}</nav>
-        <p className="nav-caption tools-caption">PREFERENSI</p>
-        <button className="nav-item" onClick={() => setNotice("Pengaturan akun akan tersedia setelah sistem login dibuat.")}><Settings size={19}/><span>Pengaturan</span></button>
-        <button className="nav-item" onClick={() => setNotice("Pusat bantuan akan ditambahkan pada tahap pengembangan berikutnya.")}><HelpCircle size={19}/><span>Pusat Bantuan</span></button>
-        <div className="sidebar-bottom"><div className="help-card"><div className="help-icon"><ShieldCheck size={20}/></div><b>Ruang belajar lebih baik</b><p>Satu tempat untuk terhubung dan berkembang bersama.</p><button onClick={() => setNotice("Terima kasih! Pusat bantuan akan segera tersedia.")}>Pelajari lebih lanjut <ChevronRight size={14}/></button></div><div className="user-profile"><div className="profile-avatar">AD</div><div className="profile-info"><b>Admin Demo</b><small>Administrator</small></div><button aria-label="Pengaturan profil" onClick={() => setNotice("Profil demo — login sungguhan belum diaktifkan.")}><Settings size={17}/></button></div></div>
+    <main style={{ minHeight: '100vh', display: 'flex', background: '#f5f7fb', color: '#26334c', fontFamily: 'Arial, sans-serif' }}>
+      {menuOpen && <button aria-label="Tutup menu" onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, background: '#14234466', border: 0, zIndex: 9 }} />}
+      <aside style={{ width: 245, flexShrink: 0, background: '#fff', borderRight: '1px solid #e8edf4', padding: 22, display: 'flex', flexDirection: 'column', gap: 20, zIndex: 10 }} className={menuOpen ? 'sk-sidebar sk-sidebar-open' : 'sk-sidebar'}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 23, fontWeight: 800, color: '#4267e8' }}><GraduationCap size={28}/> SekolahKu <button className="sk-close" onClick={() => setMenuOpen(false)} aria-label="Tutup menu"><X size={20}/></button></div>
+        <div style={{ background: '#f4f7ff', borderRadius: 12, padding: 14, fontSize: 12 }}><b>{loading ? 'Memuat akun...' : displayName}</b><p style={{ margin: '5px 0 0', color: '#7e8ba2' }}>{role}</p></div>
+        <nav style={{ display: 'grid', gap: 8 }}>
+          <button className="sk-nav sk-selected"><Home size={18}/> Beranda</button>
+          <button className="sk-nav" onClick={() => setNotice('Modul akademik akan diaktifkan setelah data dan alur sekolah dikonfigurasi.')}><BookOpen size={18}/> Akademik</button>
+          <button className="sk-nav" onClick={() => setNotice('Modul layanan sedang disiapkan dan belum menerima transaksi nyata.')}><Grid2X2 size={18}/> Layanan</button>
+          <button className="sk-nav" onClick={() => setNotice('Fitur komunikasi belum terhubung.')}><MessageCircle size={18}/> Komunikasi</button>
+          <button className="sk-nav" onClick={() => setNotice('Pengaturan akun akan ditambahkan pada tahap berikutnya.')}><Settings size={18}/> Pengaturan</button>
+        </nav>
+        <div style={{ marginTop: 'auto', borderTop: '1px solid #e8edf4', paddingTop: 16, fontSize: 12, color: '#7e8ba2' }}><ShieldCheck size={20}/><p>Akses akun mengikuti peran yang terdaftar di SekolahKu.</p><button className="sk-nav" disabled={signingOut} onClick={logout}><LogOut size={18}/>{signingOut ? 'Keluar...' : 'Keluar akun'}</button></div>
       </aside>
-      {menuOpen && <button className="mobile-scrim" onClick={() => setMenuOpen(false)} aria-label="Tutup menu"/>}
-      <section className="main-area">
-        <header className="topbar"><button className="mobile-menu" onClick={() => setMenuOpen(true)} aria-label="Buka menu"><Menu size={22}/></button><div className="breadcrumb">Portal <ChevronRight size={15}/> <b>{activeNav}</b></div><div className="top-actions"><label className="search-box"><Search size={17}/><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari layanan..." aria-label="Cari layanan"/><kbd>⌘ K</kbd></label><button className="icon-button notification-button" aria-label="Notifikasi" onClick={() => setNotice("Belum ada notifikasi baru pada akun demo.")}><Bell size={19}/><i/></button><div className="top-divider"/><div className="top-user"><div className="profile-avatar">AD</div><div><b>Admin Demo</b><small>Administrator</small></div><ChevronDown size={15}/></div></div></header>
-        <div className="content">
-          <div className="welcome-row"><div><div className="eyebrow"><Sparkles size={15}/> SELAMAT DATANG DI SEKOLAHKU</div><h1>Semua urusan sekolah,<br/><span>lebih mudah.</span></h1><p>Selamat datang! Temukan layanan sekolah dan informasi terbaru dalam satu tempat.</p></div><div className="welcome-art"><div className="art-sun"/><div className="art-cloud cloud-one"/><div className="art-cloud cloud-two"/><div className="art-book"><BookOpen size={54}/></div><div className="art-spark spark-one">✦</div><div className="art-spark spark-two">✦</div></div></div>
-          <div className="stats-grid"><div className="stat-card"><div className="stat-icon blue"><CalendarDays size={20}/></div><div><span>Agenda Hari Ini</span><strong>3 <small>kegiatan</small></strong><p><span className="status-dot blue-dot"/>Jadwal sekolah</p></div></div><div className="stat-card"><div className="stat-icon green"><CheckCircle2 size={20}/></div><div><span>Status Kehadiran</span><strong>Aktif</strong><p><span className="status-dot green-dot"/>Pantau presensi</p></div></div><div className="stat-card"><div className="stat-icon purple"><BookOpen size={20}/></div><div><span>Layanan Tersedia</span><strong>12 <small>layanan</small></strong><p><span className="status-dot purple-dot"/>Jelajahi fitur</p></div></div><div className="stat-card"><div className="stat-icon orange"><Activity size={20}/></div><div><span>Info Terbaru</span><strong>3 <small>pengumuman</small></strong><p><span className="status-dot orange-dot"/>Tetap terhubung</p></div></div></div>
-          <div className="section-heading"><div><h2>Layanan Sekolah</h2><p>Akses cepat ke layanan yang kamu butuhkan.</p></div><button className="text-button" onClick={() => setShowAll(v => !v)}>{showAll ? "Tampilkan ringkas" : "Lihat semua"} <ChevronRight size={16}/></button></div>
-          {search && <p className="search-result">Hasil pencarian untuk <b>“{search}”</b>: {filteredServices.length} layanan</p>}
-          <div className="services-grid">{filteredServices.slice(0, showAll || search ? 12 : 8).map((service) => {const Icon = service.icon; return <button className="service-card" key={service.title} onClick={() => handleService(service.title)}><div className={`service-icon ${service.color}`}><Icon size={21}/></div><div className="service-copy"><b>{service.title}</b><span>{service.desc}</span></div><ChevronRight className="service-arrow" size={17}/></button>})}{filteredServices.length === 0 && <div className="empty-search">Tidak ada layanan yang cocok. Coba kata kunci lain.</div>}</div>
-          <div className="bottom-grid"><section className="panel announcements"><div className="panel-heading"><div><h2>Pengumuman Terbaru</h2><p>Informasi penting dari sekolah.</p></div><button className="icon-button subtle" aria-label="Lihat semua pengumuman" onClick={() => setNotice("Daftar pengumuman lengkap akan tersedia saat backend dibuat.")}><ChevronRight size={19}/></button></div><div className="announcement-list">{announcements.map((item, i) => <button className="announcement-item" key={item.title} onClick={() => setNotice(`${item.title}. ${item.detail}`)}><div className={`announcement-symbol symbol-${i}`}><Megaphone size={18}/></div><div className="announcement-copy"><div><b>{item.title}</b><span className={`tag tag-${i}`}>{item.tag}</span></div><p>{item.detail}</p><small><Clock3 size={13}/>{item.date}</small></div><ChevronRight size={16} className="announcement-arrow"/></button>)}</div></section>
-          <section className="panel agenda"><div className="panel-heading"><div><h2>Agenda Sekolah</h2><p>Rencana kegiatan terdekat.</p></div><CalendarDays className="panel-title-icon" size={20}/></div><div className="agenda-date"><div className="date-tile"><span>OKT</span><b>28</b></div><div className="agenda-copy"><b>Belajar & kegiatan kelas</b><span><Clock3 size={14}/> 07.00 – 12.00 WIB</span><small>Agenda contoh untuk tampilan awal</small></div></div><div className="agenda-date"><div className="date-tile date-tile-green"><span>OKT</span><b>29</b></div><div className="agenda-copy"><b>Persiapan kegiatan sekolah</b><span><Clock3 size={14}/> 08.00 – 10.00 WIB</span><small>Agenda contoh untuk tampilan awal</small></div></div><button className="agenda-link" onClick={() => setNotice("Kalender lengkap akan tersedia pada pengembangan berikutnya.")}>Buka kalender sekolah <ChevronRight size={15}/></button></section></div>
-          <footer><span>© 2026 SekolahKu. Dibangun untuk pendidikan yang lebih terhubung.</span><span><i className="footer-dot"/> Mode demo · Data contoh</span></footer>
+      <section style={{ flex: 1, minWidth: 0 }}>
+        <header style={{ minHeight: 70, background: '#fff', borderBottom: '1px solid #e8edf4', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}><button className="sk-menu" onClick={() => setMenuOpen(true)} aria-label="Buka menu"><Menu/></button><span style={{ color: '#7e8ba2', fontSize: 13 }}>Portal / <b style={{ color: '#26334c' }}>Beranda</b></span></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}><label style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#f5f7fb', padding: 10, borderRadius: 9 }}><Search size={16}/><input aria-label="Cari layanan" placeholder="Cari layanan..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: 140, maxWidth: '28vw', border: 0, outline: 0, background: 'transparent' }}/></label><button className="sk-avatar" aria-label="Profil pengguna">{initials || 'SK'}</button></div>
+        </header>
+        <div style={{ maxWidth: 1300, margin: '0 auto', padding: 24 }}>
+          <section style={{ background: 'linear-gradient(110deg,#fff,#eef3ff)', border: '1px solid #e8edf4', borderRadius: 16, padding: '26px 28px', marginBottom: 20 }}>
+            <div style={{ color: '#4267e8', fontSize: 11, fontWeight: 800, letterSpacing: 1 }}>PORTAL SEKOLAH TERPADU</div>
+            <h1 style={{ fontSize: 'clamp(25px,4vw,36px)', margin: '12px 0 8px' }}>Halo, {loading ? '...' : displayName}!</h1>
+            <p style={{ color: '#7e8ba2', margin: 0 }}>Selamat datang kembali di SekolahKu. Berikut ringkasan layanan sekolah.</p>
+          </section>
+          {error && <div role="alert" style={{ padding: 14, borderRadius: 10, background: '#fff0ef', color: '#a33b35', marginBottom: 18 }}>{error}</div>}
+          <div className="sk-stats">
+            {[{ label: 'Status akun', value: loading ? 'Memuat...' : profile ? 'Aktif' : 'Perlu diperiksa', icon: CheckCircle2 }, { label: 'Peran pengguna', value: role, icon: UserRound }, { label: 'Pengumuman terbaru', value: String(announcements.length), icon: Bell }, { label: 'Modul tersedia', value: String(services.length), icon: Activity }].map(stat => { const Icon = stat.icon; return <div key={stat.label} className="sk-stat"><Icon size={22} color="#4267e8"/><div><small>{stat.label}</small><b>{stat.value}</b></div></div> })}
+          </div>
+          <section style={{ marginTop: 28 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 13 }}><div><h2 style={{ fontSize: 20, margin: 0 }}>Layanan Sekolah</h2><p style={{ color: '#7e8ba2', fontSize: 13 }}>Modul yang direncanakan untuk SekolahKu.</p></div></div>
+            <div className="sk-services">{visibleServices.map(item => { const Icon = item.icon; return <button key={item.title} className="sk-service" onClick={() => setNotice(`${item.title}: modul ini belum terhubung ke data operasional. Tidak ada transaksi yang dilakukan.`)}><span className="sk-service-icon"><Icon size={21}/></span><span><b>{item.title}</b><small>{item.desc}</small></span><ChevronRight size={17}/></button> })}</div>
+            {!visibleServices.length && <p>Tidak ada layanan yang cocok dengan pencarian.</p>}
+          </section>
+          <section style={{ marginTop: 28, background: '#fff', border: '1px solid #e8edf4', borderRadius: 14, padding: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}><Megaphone size={21} color="#4267e8"/><h2 style={{ fontSize: 19, margin: 0 }}>Pengumuman terbaru</h2></div>
+            {loading ? <p style={{ color: '#7e8ba2' }}>Memuat pengumuman...</p> : announcements.length ? announcements.map(item => <article key={item.id} style={{ borderTop: '1px solid #edf0f5', padding: '14px 0 4px', marginTop: 10 }}><b>{item.title}</b><p style={{ whiteSpace: 'pre-wrap', color: '#64728a', fontSize: 13, lineHeight: 1.6 }}>{item.body}</p><small style={{ color: '#8b97aa' }}>{new Date(item.created_at).toLocaleDateString('id-ID', { dateStyle: 'medium' })}</small></article>) : <p style={{ color: '#7e8ba2', fontSize: 13 }}>Belum ada pengumuman terpublikasi atau data belum tersedia.</p>}
+          </section>
+          <footer style={{ padding: '22px 0', color: '#8b97aa', fontSize: 11 }}>© 2026 SekolahKu · Tampilan akun nyata, modul operasional dikembangkan bertahap.</footer>
         </div>
       </section>
-      {notice && <div className="toast" role="status"><div className="toast-icon"><CheckCircle2 size={19}/></div><p>{notice}</p><button onClick={() => setNotice("")} aria-label="Tutup pesan"><X size={17}/></button></div>}
+      {notice && <div role="status" style={{ position: 'fixed', right: 16, bottom: 16, maxWidth: 380, background: '#26334c', color: '#fff', borderRadius: 12, padding: 16, zIndex: 20, boxShadow: '0 8px 30px #14234433' }}>{notice}<button onClick={() => setNotice('')} aria-label="Tutup pesan" style={{ marginLeft: 12, background: 'transparent', color: '#fff', border: 0 }}><X size={16}/></button></div>}
+      <style jsx>{`
+        .sk-nav{display:flex;align-items:center;gap:10px;padding:12px;border:0;border-radius:9px;background:transparent;color:#64728a;text-align:left;font-size:13px}
+        .sk-selected{background:#edf2ff;color:#4267e8;font-weight:700}
+        .sk-avatar{width:38px;height:38px;border-radius:50%;border:0;background:#eaf0ff;color:#4267e8;font-weight:800}
+        .sk-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+        .sk-stat{background:#fff;border:1px solid #e8edf4;border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px;min-width:0}
+        .sk-stat small,.sk-stat b{display:block}.sk-stat small{font-size:11px;color:#7e8ba2;margin-bottom:6px}.sk-stat b{font-size:15px}
+        .sk-services{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+        .sk-service{display:flex;align-items:center;gap:12px;text-align:left;padding:15px;background:#fff;border:1px solid #e8edf4;border-radius:12px;color:#26334c;min-width:0}
+        .sk-service-icon{display:grid;place-items:center;width:40px;height:40px;flex-shrink:0;border-radius:10px;background:#edf2ff;color:#4267e8}
+        .sk-service span:nth-child(2){flex:1;min-width:0}.sk-service b,.sk-service small{display:block}.sk-service b{font-size:13px}.sk-service small{font-size:11px;color:#7e8ba2;margin-top:5px}
+        .sk-menu,.sk-close{display:none;border:0;background:transparent;color:#26334c}
+        @media(max-width:760px){.sk-sidebar{position:fixed;inset:0 auto 0 0;min-height:100dvh;transform:translateX(-110%);transition:transform .2s;width:270px!important;box-shadow:none}.sk-sidebar-open{transform:translateX(0);box-shadow:10px 0 30px #14234422}.sk-close{display:block;margin-left:auto}.sk-menu{display:block}.sk-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.sk-services{grid-template-columns:1fr}}
+        @media(max-width:380px){.sk-stats{grid-template-columns:1fr} }
+      `}</style>
     </main>
-  );
+  )
 }
