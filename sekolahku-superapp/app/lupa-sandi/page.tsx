@@ -22,7 +22,7 @@ export default function LupaSandiPage() {
                                       setLoading(false)
 
                                           if (error) {
-                                                setPesan('Gagal mengirim permintaan. Periksa konfigurasi URL Supabase.')
+                                                setPesan(`Gagal mengirim permintaan: ${error.message}`)
                                                       return
                                                           }
 
