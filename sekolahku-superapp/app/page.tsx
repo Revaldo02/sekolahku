@@ -8,7 +8,7 @@ import { Activity, Bell, BookOpen, CalendarDays, CheckCircle2, ChevronRight, Cli
 type Profile = { full_name: string | null; role: string | null }
 type Announcement = { id: string; title: string; body: string; created_at: string }
 
-const roleLabels: Record<string, string> = { admin: 'Administrator', teacher: 'Guru', student: 'Siswa', parent: 'Orang Tua' }
+const roleLabels: Record<string, string> = { admin: 'Admin', administrator: 'Admin', guru: 'Guru', teacher: 'Guru', siswa: 'Siswa', student: 'Siswa', orang_tua: 'Orang Tua', orangtua: 'Orang Tua', parent: 'Orang Tua' }
 const services = [
   { title: 'Jadwal Pelajaran', desc: 'Jadwal kelas dan mata pelajaran', icon: CalendarDays },
   { title: 'Kehadiran', desc: 'Catatan presensi', icon: ClipboardCheck },
@@ -78,9 +78,9 @@ export default function HomePage() {
     router.refresh()
   }
 
-  const rawDisplayName = profile?.full_name?.trim() || accountName?.trim() || 'Pengguna SekolahKu'
+  const rawDisplayName = accountName?.trim() || profile?.full_name?.trim() || 'Pengguna SekolahKu'
   const displayName = rawDisplayName === 'Pengguna SekolahKu' ? rawDisplayName : rawDisplayName.charAt(0).toLocaleUpperCase('id-ID') + rawDisplayName.slice(1)
-  const role = roleLabels[profile?.role ?? ''] || 'Pengguna'
+  const role = roleLabels[(profile?.role ?? '').trim().toLowerCase()] || 'Peran belum diatur'
   const initials = displayName.split(/\\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()
   const visibleServices = services.filter(item => `${item.title} ${item.desc}`.toLowerCase().includes(search.toLowerCase()))
 
