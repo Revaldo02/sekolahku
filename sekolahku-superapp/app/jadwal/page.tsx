@@ -38,13 +38,13 @@ export default function JadwalPage() {
  async function addClass(e: React.FormEvent<HTMLFormElement>) {
   e.preventDefault(); if (!classNameInput.trim()) return
   setSaving(true); setMessage('')
-  try { const { error } = await getSupabase().from('classes').insert({ name: classNameInput.trim(), grade_level: gradeInput.trim() || null }); if (error) throw error; setClassNameInput(''); setGradeInput(''); await refresh(); setMessage('Kelas berhasil ditambahkan.') } catch (err) { setMessage(err instanceof Error ? err.message : 'Kelas gagal ditambahkan. Pastikan akun memiliki peran admin/guru.') } finally { setSaving(false) }
+  try { const { error } = await getSupabase().from('classes').insert({ name: classNameInput.trim(), grade_level: gradeInput.trim() || null }); if (error) throw error; setClassNameInput(''); setGradeInput(''); await refresh(); setMessage('Kelas berhasil ditambahkan.') } catch (err) { setMessage(err && typeof err === 'object' && 'message' in err ? String(err.message) : 'Kelas gagal ditambahkan. Coba lagi.') } finally { setSaving(false) }
  }
  async function addSchedule(e: React.FormEvent<HTMLFormElement>) {
   e.preventDefault()
   if (!subject.trim() || end <= start) { setMessage('Isi mata pelajaran dan pastikan waktu selesai setelah waktu mulai.'); return }
   setSaving(true); setMessage('')
-  try { const { error } = await getSupabase().from('schedules').insert({ subject: subject.trim(), teacher_name: teacher.trim() || null, day_of_week: Number(day), start_time: start, end_time: end, room: room.trim() || null, class_id: classId || null }); if (error) throw error; setSubject(''); setTeacher(''); setRoom(''); await refresh(); setMessage('Jadwal berhasil ditambahkan.') } catch (err) { setMessage(err instanceof Error ? err.message : 'Jadwal gagal ditambahkan. Pastikan akun memiliki peran admin/guru.') } finally { setSaving(false) }
+  try { const { error } = await getSupabase().from('schedules').insert({ subject: subject.trim(), teacher_name: teacher.trim() || null, day_of_week: Number(day), start_time: start, end_time: end, room: room.trim() || null, class_id: classId || null }); if (error) throw error; setSubject(''); setTeacher(''); setRoom(''); await refresh(); setMessage('Jadwal berhasil ditambahkan.') } catch (err) { setMessage(err && typeof err === 'object' && 'message' in err ? String(err.message) : 'Jadwal gagal ditambahkan. Coba lagi.') } finally { setSaving(false) }
  }
  const groups = days.slice(1).map((dayName, i) => ({ day: dayName, entries: items.filter(item => item.day_of_week === i + 1) })).filter(g => g.entries.length)
  return <main style={{ minHeight: '100vh', background: '#f5f7fb', color: '#26334c', fontFamily: 'Arial,sans-serif', padding: 20 }}><div style={{ maxWidth: 900, margin: '0 auto' }}><Link href="/" style={{ color: '#4267e8' }}>← Kembali ke Beranda</Link><header style={{ background: '#fff', border: '1px solid #e8edf4', borderRadius: 16, padding: 24, margin: '20px 0' }}><p style={{ color: '#4267e8', fontWeight: 800 }}>AKADEMIK SEKOLAHKU</p><h1>Jadwal Pelajaran</h1><p>Jadwal dan kelas terhubung ke database sekolah.</p></header>
