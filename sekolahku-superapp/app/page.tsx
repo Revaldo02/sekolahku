@@ -101,6 +101,7 @@ export default function HomePage() {
         <div style={{ background: '#f4f7ff', borderRadius: 12, padding: 14, fontSize: 12 }}><b>{loading ? 'Memuat akun...' : displayName}</b><p style={{ margin: '5px 0 0', color: '#7e8ba2' }}>{role}</p></div>
         <nav style={{ display: 'grid', gap: 8 }}>
           <button className="sk-nav sk-selected"><Home size={18}/> Beranda</button>
+          <Link href="/kelas" className="sk-nav" style={{ textDecoration: 'none' }}><GraduationCap size={18}/> Kelas</Link>
           <Link href="/jadwal" className="sk-nav" style={{ textDecoration: 'none' }}><BookOpen size={18}/> Jadwal Pelajaran</Link>
           <button className="sk-nav" onClick={() => setNotice('Modul layanan sedang disiapkan dan belum menerima transaksi nyata.')}><Grid2X2 size={18}/> Layanan</button>
           <button className="sk-nav" onClick={() => setNotice('Fitur komunikasi belum terhubung.')}><MessageCircle size={18}/> Komunikasi</button>
