@@ -126,7 +126,7 @@ export default function HomePage() {
           </div>
           <section style={{ marginTop: 28 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 13 }}><div><h2 style={{ fontSize: 20, margin: 0 }}>Layanan Sekolah</h2><p style={{ color: '#7e8ba2', fontSize: 13 }}>Modul yang direncanakan untuk SekolahKu.</p></div></div>
-            <div className="sk-services">{visibleServices.map(item => { const Icon = item.icon; return <button key={item.title} className="sk-service" onClick={() => setNotice(`${item.title}: modul ini belum terhubung ke data operasional. Tidak ada transaksi yang dilakukan.`)}><span className="sk-service-icon"><Icon size={21}/></span><span><b>{item.title}</b><small>{item.desc}</small></span><ChevronRight size={17}/></button> })}</div>
+            <div className="sk-services">{visibleServices.map(item => { const Icon = item.icon; return <button key={item.title} className="sk-service" onClick={() => { if (item.title === 'Data Siswa') router.push('/siswa'); else if (item.title === 'Jadwal Pelajaran') router.push('/jadwal'); else if (item.title === 'Pengumuman') setNotice('Pengumuman ditampilkan di bagian bawah halaman.'); else setNotice(`${item.title}: modul ini belum terhubung ke data operasional. Tidak ada transaksi yang dilakukan.`) }}><span className="sk-service-icon"><Icon size={21}/></span><span><b>{item.title}</b><small>{item.desc}</small></span><ChevronRight size={17}/></button> })}</div>
             {!visibleServices.length && <p>Tidak ada layanan yang cocok dengan pencarian.</p>}
           </section>
           <section style={{ marginTop: 28, background: '#fff', border: '1px solid #e8edf4', borderRadius: 14, padding: 20 }}>
