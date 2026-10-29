@@ -90,7 +90,7 @@ export default function HomePage() {
   const rawDisplayName = accountName?.trim() || profile?.full_name?.trim() || 'Pengguna SekolahKu'
   const displayName = rawDisplayName === 'Pengguna SekolahKu' ? rawDisplayName : rawDisplayName.charAt(0).toLocaleUpperCase('id-ID') + rawDisplayName.slice(1)
   const role = roleLabels[(profile?.role ?? '').trim().toLowerCase()] || 'Peran belum diatur'
-  const initials = displayName.split(/\\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()
+  const initials = displayName.split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()
   const visibleServices = services.filter(item => `${item.title} ${item.desc}`.toLowerCase().includes(search.toLowerCase()))
 
   return (
@@ -102,7 +102,9 @@ export default function HomePage() {
         <nav style={{ display: 'grid', gap: 8 }}>
           <button className="sk-nav sk-selected"><Home size={18}/> Beranda</button>
           <Link href="/kelas" className="sk-nav" style={{ textDecoration: 'none' }}><GraduationCap size={18}/> Kelas</Link>
-          <Link href="/jadwal" className="sk-nav" style={{ textDecoration: 'none' }}><BookOpen size={18}/> Jadwal Pelajaran</Link>\n          <Link href="/kehadiran" className="sk-nav" style={{ textDecoration: 'none' }}><ClipboardCheck size={18}/> Kehadiran</Link>
+          <Link href="/jadwal" className="sk-nav" style={{ textDecoration: 'none' }}><BookOpen size={18}/> Jadwal Pelajaran</Link>
+          <Link href="/kehadiran" className="sk-nav" style={{ textDecoration: 'none' }}><ClipboardCheck size={18}/> Kehadiran</Link>
+          <Link href="/pengumuman" className="sk-nav" style={{ textDecoration: 'none' }}><Megaphone size={18}/> Pengumuman</Link>
           <button className="sk-nav" onClick={() => setNotice('Modul layanan sedang disiapkan dan belum menerima transaksi nyata.')}><Grid2X2 size={18}/> Layanan</button>
           <button className="sk-nav" onClick={() => setNotice('Fitur komunikasi belum terhubung.')}><MessageCircle size={18}/> Komunikasi</button>
           <button className="sk-nav" onClick={() => setNotice('Pengaturan akun akan ditambahkan pada tahap berikutnya.')}><Settings size={18}/> Pengaturan</button>
@@ -126,7 +128,7 @@ export default function HomePage() {
           </div>
           <section style={{ marginTop: 28 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 13 }}><div><h2 style={{ fontSize: 20, margin: 0 }}>Layanan Sekolah</h2><p style={{ color: '#7e8ba2', fontSize: 13 }}>Modul yang direncanakan untuk SekolahKu.</p></div></div>
-            <div className="sk-services">{visibleServices.map(item => { const Icon = item.icon; return <button key={item.title} className="sk-service" onClick={() => { if (item.title === 'Data Siswa') router.push('/siswa'); else if (item.title === 'Jadwal Pelajaran') router.push('/jadwal'); else if (item.title === 'Kehadiran') router.push('/kehadiran'); else if (item.title === 'Pengumuman') setNotice('Pengumuman ditampilkan di bagian bawah halaman.'); else setNotice(`${item.title}: modul ini belum terhubung ke data operasional. Tidak ada transaksi yang dilakukan.`) }}><span className="sk-service-icon"><Icon size={21}/></span><span><b>{item.title}</b><small>{item.desc}</small></span><ChevronRight size={17}/></button> })}</div>
+            <div className="sk-services">{visibleServices.map(item => { const Icon = item.icon; return <button key={item.title} className="sk-service" onClick={() => { if (item.title === 'Data Siswa') router.push('/siswa'); else if (item.title === 'Jadwal Pelajaran') router.push('/jadwal'); else if (item.title === 'Kehadiran') router.push('/kehadiran'); else if (item.title === 'Pengumuman') router.push('/pengumuman'); else setNotice(`${item.title}: modul ini belum terhubung ke data operasional. Tidak ada transaksi yang dilakukan.`) }}><span className="sk-service-icon"><Icon size={21}/></span><span><b>{item.title}</b><small>{item.desc}</small></span><ChevronRight size={17}/></button> })}</div>
             {!visibleServices.length && <p>Tidak ada layanan yang cocok dengan pencarian.</p>}
           </section>
           <section style={{ marginTop: 28, background: '#fff', border: '1px solid #e8edf4', borderRadius: 14, padding: 20 }}>
