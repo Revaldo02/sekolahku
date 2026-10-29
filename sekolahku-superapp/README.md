@@ -10,7 +10,7 @@ Data demo atau modul yang menampilkan pemberitahuan bukan transaksi nyata. Janga
 
 ## Kebutuhan lokal
 
-- Node.js 20.9 atau lebih baru
+- Node.js 22 atau lebih baru
 - npm
 - Akun/proyek Supabase hanya jika ingin menguji autentikasi dan database nyata
 
