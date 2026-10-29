@@ -1,6 +1,5 @@
 // Mengembalikan path internal yang aman untuk pengalihan setelah login/reset sandi.
-// Nilai diperiksa menggunakan parser URL browser agar variasi slash/backslash
-// atau karakter kontrol tidak dapat mengarahkan pengguna ke origin lain.
+// Tolak backslash dan karakter kontrol sebelum memeriksa origin hasil parsing URL.
 const BASE = 'http://internal.invalid'
 
 export function safeRedirectPath(
@@ -8,6 +7,7 @@ export function safeRedirectPath(
   fallback = '/'
 ): string {
   if (!value || !value.startsWith('/')) return fallback
+  if (/[\\\\\\u0000-\\u001F\\u007F]/.test(value)) return fallback
 
   try {
     const url = new URL(value, BASE)
