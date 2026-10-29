@@ -51,7 +51,7 @@ export async function middleware(request: NextRequest) {
   const aturanPeran: Record<string, string[]> = {
     '/admin': ['admin'],
     '/guru': ['admin', 'teacher'],
-    '/siswa': ['admin', 'student'],
+    '/siswa': ['admin', 'teacher', 'student'],
     '/orang-tua': ['admin', 'parent'],
   }
 
