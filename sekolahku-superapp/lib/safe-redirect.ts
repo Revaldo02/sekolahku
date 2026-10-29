@@ -7,7 +7,10 @@ export function safeRedirectPath(
   fallback = '/'
 ): string {
   if (!value || !value.startsWith('/')) return fallback
-  if (/[\\\\\\u0000-\\u001F\\u007F]/.test(value)) return fallback
+  if (value.includes('\\') || Array.from(value).some((char) => {
+    const code = char.charCodeAt(0)
+    return code < 32 || code === 127
+  })) return fallback
 
   try {
     const url = new URL(value, BASE)
