@@ -16,6 +16,7 @@ export default function SiswaPage() {
  const [editName, setEditName] = useState('')
  const [editClass, setEditClass] = useState('')
  const [search, setSearch] = useState('')
+ const [filterClass, setFilterClass] = useState('all')
  const [canManage, setCanManage] = useState(false)
  const [loading, setLoading] = useState(true)
  const [saving, setSaving] = useState(false)
@@ -53,7 +54,7 @@ export default function SiswaPage() {
    setName(''); setClassId(''); await refresh(); setMessage('Data siswa berhasil ditambahkan.')
   } catch(e) { setMessage(e && typeof e==='object' && 'message' in e ? String(e.message) : 'Data siswa gagal ditambahkan.') } finally { setSaving(false) }
  }
- const visible = students.filter(s => s.full_name.toLowerCase().includes(search.toLowerCase()))
+ const visible = students.filter(s => s.full_name.toLocaleLowerCase('id-ID').includes(search.trim().toLocaleLowerCase('id-ID')) && (filterClass === 'all' || (filterClass === 'unassigned' ? !s.class_id : s.class_id === filterClass)))
  return <main style={{minHeight:'100vh',background:'#f5f7fb',color:'#26334c',fontFamily:'Arial,sans-serif',padding:20}}><div style={{maxWidth:900,margin:'0 auto'}}>
  <Link href="/" style={{color:'#4267e8'}}>← Kembali ke Beranda</Link><header style={{background:'#fff',border:'1px solid #e8edf4',borderRadius:16,padding:24,margin:'20px 0'}}><p style={{color:'#4267e8',fontWeight:800}}>ADMINISTRASI SEKOLAHKU</p><h1>Data Siswa</h1><p>Daftar siswa dan rombongan belajar.</p></header>
  {message && <p role="status" style={{padding:12,background:'#fff',borderRadius:8,overflowWrap:'anywhere'}}>{message}</p>}
@@ -61,7 +62,7 @@ export default function SiswaPage() {
  <label>Nama lengkap<input required value={name} onChange={e=>setName(e.target.value)} placeholder="Nama siswa" style={field}/></label>
   <label>Kelas<select value={classId} onChange={e=>setClassId(e.target.value)} style={field}><option value="">Belum ditentukan</option>{classes.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
  <button disabled={saving} style={{padding:'12px 16px',background:'#4267e8',color:'#fff',border:0,borderRadius:8,fontWeight:700}}>{saving?'Menyimpan…':'Simpan siswa'}</button></form></section>}
- <section style={{background:'#fff',padding:20,borderRadius:14}}><h2>Daftar siswa ({visible.length})</h2><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cari nama siswa" style={field}/>
+ <section style={{background:'#fff',padding:20,borderRadius:14}}><h2>Daftar siswa ({visible.length})</h2><input aria-label="Cari nama siswa" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cari nama siswa" style={field}/><label>Filter kelas<select aria-label="Filter kelas siswa" value={filterClass} onChange={e=>setFilterClass(e.target.value)} style={field}><option value="all">Semua kelas</option><option value="unassigned">Belum ditentukan</option>{classes.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
  {loading?'Memuat data siswa…':visible.length ? visible.map(s=><article key={s.id} style={{padding:14,borderTop:'1px solid #edf0f5'}}>{editing?.id===s.id ? <form onSubmit={saveEdit}><label>Nama lengkap<input required value={editName} onChange={e=>setEditName(e.target.value)} style={field}/></label><label>Kelas<select value={editClass} onChange={e=>setEditClass(e.target.value)} style={field}><option value="">Belum ditentukan</option>{classes.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><button disabled={saving} style={{padding:10,background:'#4267e8',color:'#fff',border:0,borderRadius:8}}>Simpan</button> <button type="button" onClick={()=>setEditing(null)} style={{padding:10,border:0,borderRadius:8}}>Batal</button></form>:<><b>{s.full_name}</b><p style={{color:'#718096',fontSize:13}}>Kelas {classes.find(c=>c.id===s.class_id)?.name ?? 'Belum ditentukan'}</p>{canManage && <button onClick={()=>{setEditing(s);setEditName(s.full_name);setEditClass(s.class_id??'')}} style={{padding:9,background:'#eef2ff',color:'#3657c8',border:0,borderRadius:8}}>Ubah data</button>}</>}</article>):<p>Belum ada siswa atau tidak ada hasil pencarian.</p>}</section>
  <p style={{color:'#718096',fontSize:12,marginTop:16}}>Data dapat diubah oleh admin/guru. Penghapusan belum disediakan agar riwayat presensi tidak terhapus tanpa sengaja.</p></div></main>
 }
