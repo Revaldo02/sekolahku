@@ -55,6 +55,7 @@ Tes yang membutuhkan Supabase perlu dijalankan lagi setelah kredensial dan skema
 - Kelas
 - Jadwal pelajaran
 - Kehadiran
+- Pengumuman terpublikasi dengan pencarian dan muat ulang
 - Manifest dan service worker dasar untuk pengembangan PWA
 
 Sebagian layanan lain masih berupa tampilan atau pemberitahuan demo dan harus dihubungkan ke database serta diuji sebelum dipakai.
@@ -69,7 +70,7 @@ Sebagian layanan lain masih berupa tampilan atau pemberitahuan demo dan harus di
 
 ## Tahap berikutnya
 
-1. Menuntaskan perbaikan dan pengujian lokal.
+1. Menuntaskan perbaikan dan pengujian kualitas otomatis (lint, TypeScript, dan build).
 2. Memvalidasi skema Supabase, RLS, serta alur setiap peran.
 3. Menguji responsif dan aksesibilitas di perangkat nyata.
 4. Baru setelah semua pemeriksaan disetujui, merencanakan deployment dan publikasi. Deployment tidak termasuk tahap saat ini.
