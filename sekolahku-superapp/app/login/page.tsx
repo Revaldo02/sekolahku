@@ -15,25 +15,28 @@ export default function LoginPage() {
     setLoading(true)
     setPesan('')
 
-    const { error } = await getSupabase().auth.signInWithPassword({
-      email,
-      password,
-    })
+    try {
+      const { error } = await getSupabase().auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      })
 
-    setLoading(false)
+      if (error) {
+        setPesan('Login gagal. Periksa email dan kata sandi, lalu coba lagi.')
+        return
+      }
 
-    if (error) {
-      setPesan('Login gagal: ' + error.message)
-      return
+      // Hanya izinkan tujuan lokal agar parameter next tidak menjadi open redirect.
+      const requestedNext = new URLSearchParams(window.location.search).get('next')
+      const safeNext = requestedNext && requestedNext.startsWith('/') && !requestedNext.startsWith('//')
+        ? requestedNext
+        : '/'
+      window.location.href = safeNext
+    } catch {
+      setPesan('Layanan login belum siap. Periksa konfigurasi Supabase lalu coba lagi.')
+    } finally {
+      setLoading(false)
     }
-
-    // Kembali ke halaman tujuan setelah middleware mengarahkan pengguna ke login.
-    // Hanya izinkan path lokal agar parameter next tidak menjadi open redirect.
-    const requestedNext = new URLSearchParams(window.location.search).get('next')
-    const safeNext = requestedNext && requestedNext.startsWith('/') && !requestedNext.startsWith('//')
-      ? requestedNext
-      : '/'
-    window.location.href = safeNext
   }
 
   return (
@@ -42,23 +45,33 @@ export default function LoginPage() {
       <h2>Masuk ke akun</h2>
       <form onSubmit={handleLogin}>
         <label htmlFor="email">Email</label>
-        <input id="email" type="email" required value={email}
+        <input
+          id="email"
+          type="email"
+          autoComplete="email"
+          required
+          value={email}
           onChange={(e) => setEmail(e.target.value)}
-          style={{ display: 'block', width: '100%', padding: 12, margin: '8px 0 16px' }} />
+          style={{ display: 'block', boxSizing: 'border-box', width: '100%', padding: 12, margin: '8px 0 16px' }}
+        />
 
         <label htmlFor="password">Kata sandi</label>
-        <input id="password" type="password" required value={password}
+        <input
+          id="password"
+          type="password"
+          autoComplete="current-password"
+          required
+          value={password}
           onChange={(e) => setPassword(e.target.value)}
-          style={{ display: 'block', width: '100%', padding: 12, margin: '8px 0 16px' }} />
+          style={{ display: 'block', boxSizing: 'border-box', width: '100%', padding: 12, margin: '8px 0 16px' }}
+        />
 
         <button type="submit" disabled={loading} style={{ width: '100%', padding: 12 }}>
           {loading ? 'Memproses...' : 'Masuk'}
         </button>
       </form>
-      <p>
-        <Link href="/lupa-sandi">Lupa kata sandi?</Link>
-        </p>
-      {pesan && <p role="alert">{pesan}</p>}
+      <p><Link href="/lupa-sandi">Lupa kata sandi?</Link></p>
+      {pesan && <p role="alert" aria-live="polite">{pesan}</p>}
       <p>Belum punya akun? <Link href="/daftar">Daftar di sini</Link></p>
     </main>
   )
