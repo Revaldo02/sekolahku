@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { getSupabase } from '@/lib/supabase'
+import { safeRedirectPath } from '@/lib/safe-redirect'
 import Link from 'next/link'
 
 export default function LoginPage() {
@@ -27,13 +28,9 @@ export default function LoginPage() {
       return
     }
 
-    // Kembali ke halaman tujuan setelah middleware mengarahkan pengguna ke login.
-    // Hanya izinkan path lokal agar parameter next tidak menjadi open redirect.
+    // Kembali ke halaman tujuan hanya jika path berada pada origin internal.
     const requestedNext = new URLSearchParams(window.location.search).get('next')
-    const safeNext = requestedNext && requestedNext.startsWith('/') && !requestedNext.startsWith('//')
-      ? requestedNext
-      : '/'
-    window.location.href = safeNext
+    window.location.href = safeRedirectPath(requestedNext, '/')
   }
 
   return (
@@ -57,7 +54,7 @@ export default function LoginPage() {
       </form>
       <p>
         <Link href="/lupa-sandi">Lupa kata sandi?</Link>
-        </p>
+      </p>
       {pesan && <p role="alert">{pesan}</p>}
       <p>Belum punya akun? <Link href="/daftar">Daftar di sini</Link></p>
     </main>
