@@ -1,0 +1,59 @@
+'use client'
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { getSupabase } from '@/lib/supabase'
+
+type Student = { id: string; full_name: string; student_number: string | null; class_id: string | null }
+type SchoolClass = { id: string; name: string; grade_level: string | null }
+const field = { width: '100%', boxSizing: 'border-box' as const, padding: 12, border: '1px solid #dbe2ee', borderRadius: 8, margin: '5px 0 12px', fontSize: 16 }
+
+export default function SiswaPage() {
+ const [students, setStudents] = useState<Student[]>([])
+ const [classes, setClasses] = useState<SchoolClass[]>([])
+ const [name, setName] = useState('')
+ const [nis, setNis] = useState('')
+ const [classId, setClassId] = useState('')
+ const [search, setSearch] = useState('')
+ const [canManage, setCanManage] = useState(false)
+ const [loading, setLoading] = useState(true)
+ const [saving, setSaving] = useState(false)
+ const [message, setMessage] = useState('')
+ async function refresh() {
+  const db = getSupabase()
+  const [s,c] = await Promise.all([db.from('students').select('id,full_name,student_number,class_id').order('full_name'), db.from('classes').select('id,name,grade_level').order('name')])
+  if (s.error) throw s.error
+  if (c.error) throw c.error
+  setStudents((s.data ?? []) as Student[])
+  setClasses((c.data ?? []) as SchoolClass[])
+ }
+ useEffect(() => { let alive = true; async function load() { try {
+  const db = getSupabase()
+  const {data:{user},error} = await db.auth.getUser()
+  if (error || !user) { window.location.href='/login'; return }
+  const [{data:p},{data:r}] = await Promise.all([db.from('profiles').select('role').eq('id',user.id).maybeSingle(),db.rpc('current_user_role')])
+  if (alive) setCanManage(['admin','teacher'].includes(typeof r==='string' && r ? r : p?.role ?? ''))
+  await refresh()
+ } catch(e) { if(alive) setMessage(e && typeof e==='object' && 'message' in e ? String(e.message) : 'Data siswa gagal dimuat.') } finally { if(alive) setLoading(false) } }
+ load(); return()=>{alive=false} }, [])
+ async function addStudent(e: React.FormEvent<HTMLFormElement>) {
+  e.preventDefault(); if(!name.trim()) return
+  setSaving(true); setMessage('')
+  try {
+   const {error} = await getSupabase().from('students').insert({full_name:name.trim(),student_number:nis.trim()||null,class_id:classId||null})
+   if(error) throw error
+   setName(''); setNis(''); setClassId(''); await refresh(); setMessage('Data siswa berhasil ditambahkan.')
+  } catch(e) { setMessage(e && typeof e==='object' && 'message' in e ? String(e.message) : 'Data siswa gagal ditambahkan.') } finally { setSaving(false) }
+ }
+ const visible = students.filter(s => s.full_name.toLowerCase().includes(search.toLowerCase()) || (s.student_number ?? '').toLowerCase().includes(search.toLowerCase()))
+ return <main style={{minHeight:'100vh',background:'#f5f7fb',color:'#26334c',fontFamily:'Arial,sans-serif',padding:20}}><div style={{maxWidth:900,margin:'0 auto'}}>
+ <Link href="/" style={{color:'#4267e8'}}>← Kembali ke Beranda</Link><header style={{background:'#fff',border:'1px solid #e8edf4',borderRadius:16,padding:24,margin:'20px 0'}}><p style={{color:'#4267e8',fontWeight:800}}>ADMINISTRASI SEKOLAHKU</p><h1>Data Siswa</h1><p>Daftar siswa dan rombongan belajar.</p></header>
+ {message && <p role="status" style={{padding:12,background:'#fff',borderRadius:8,overflowWrap:'anywhere'}}>{message}</p>}
+ {canManage && <section style={{background:'#fff',padding:20,borderRadius:14,marginBottom:16}}><h2>Tambah siswa</h2><form onSubmit={addStudent}>
+ <label>Nama lengkap<input required value={name} onChange={e=>setName(e.target.value)} placeholder="Nama siswa" style={field}/></label>
+ <label>NIS / nomor siswa (opsional)<input value={nis} onChange={e=>setNis(e.target.value)} placeholder="Nomor induk siswa" style={field}/></label>
+ <label>Kelas<select value={classId} onChange={e=>setClassId(e.target.value)} style={field}><option value="">Belum ditentukan</option>{classes.map(c=><option key={c.id} value={c.id}>{c.name}{c.grade_level ? ' · Tingkat '+c.grade_level : ''}</option>)}</select></label>
+ <button disabled={saving} style={{padding:'12px 16px',background:'#4267e8',color:'#fff',border:0,borderRadius:8,fontWeight:700}}>{saving?'Menyimpan…':'Simpan siswa'}</button></form></section>}
+ <section style={{background:'#fff',padding:20,borderRadius:14}}><h2>Daftar siswa ({visible.length})</h2><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cari nama atau NIS" style={field}/>
+ {loading?'Memuat data siswa…':visible.length ? visible.map(s=><article key={s.id} style={{padding:14,borderTop:'1px solid #edf0f5'}}><b>{s.full_name}</b><p style={{color:'#718096',fontSize:13}}>{s.student_number ? 'NIS: '+s.student_number+' · ' : ''}Kelas {classes.find(c=>c.id===s.class_id)?.name ?? 'Belum ditentukan'}</p></article>):<p>Belum ada siswa atau tidak ada hasil pencarian.</p>}</section>
+ <p style={{color:'#718096',fontSize:12,marginTop:16}}>Pengubahan dan penghapusan data siswa belum tersedia.</p></div></main>
+}
