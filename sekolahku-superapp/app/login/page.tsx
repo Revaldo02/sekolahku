@@ -27,7 +27,13 @@ export default function LoginPage() {
       return
     }
 
-    window.location.href = '/'
+    // Kembali ke halaman tujuan setelah middleware mengarahkan pengguna ke login.
+    // Hanya izinkan path lokal agar parameter next tidak menjadi open redirect.
+    const requestedNext = new URLSearchParams(window.location.search).get('next')
+    const safeNext = requestedNext && requestedNext.startsWith('/') && !requestedNext.startsWith('//')
+      ? requestedNext
+      : '/'
+    window.location.href = safeNext
   }
 
   return (
