@@ -1,76 +1,75 @@
 # SekolahKu SuperApp
 
-Fondasi awal portal sekolah terpadu berbasis Next.js, React, TypeScript, dan CSS responsif. Dirancang agar mudah dikembangkan bertahap dan nyaman dibuka melalui HP Android.
+Portal sekolah responsif berbasis Next.js App Router, TypeScript, React, dan Supabase. Proyek ini dikembangkan bertahap dengan prioritas penggunaan nyaman di HP Android, fondasi akses berbasis peran, dan biaya serendah mungkin.
 
-## Status saat ini
+## Status pengembangan
 
-**Prototype frontend / mode demo.** Tampilan dashboard dan navigasi layanan sudah dibuat. Konten statistik, agenda, dan pengumuman masih contoh; belum ada autentikasi, backend, database, atau data sekolah sungguhan.
+Website dan halaman inti sudah tersedia di repository. Integrasi autentikasi serta beberapa modul menggunakan Supabase. **Belum dinyatakan siap untuk operasional sekolah nyata** sebelum konfigurasi database, kebijakan Row Level Security (RLS), data awal, dan seluruh alur diuji pada proyek Supabase milik sekolah.
 
-## Kebutuhan
+Data demo atau modul yang menampilkan pemberitahuan bukan transaksi nyata. Jangan gunakan data siswa sungguhan sampai akses, privasi, dan kebijakan penyimpanan diverifikasi.
+
+## Kebutuhan lokal
 
 - Node.js 20.9 atau lebih baru
 - npm
-- Git (opsional untuk menjalankan lokal, dibutuhkan untuk version control)
+- Akun/proyek Supabase hanya jika ingin menguji autentikasi dan database nyata
 
-## Menjalankan di komputer atau lingkungan cloud
+## Menyiapkan website lokal
+
+1. Masuk ke folder `sekolahku-superapp`.
+2. Pasang dependensi:
+
+   ```bash
+   npm ci
+   ```
+
+3. Salin `.env.example` menjadi `.env.local`.
+4. Untuk menguji autentikasi/database, isi URL proyek Supabase dan publishable key dari pengaturan proyek Supabase. Jangan pernah menaruh service-role key di frontend atau variabel `NEXT_PUBLIC_*`.
+5. Jalankan server pengembangan:
+
+   ```bash
+   npm run dev
+   ```
+
+6. Buka `http://localhost:3000` di browser. Untuk HP, perangkat dan komputer harus berada di jaringan yang memungkinkan akses ke alamat lokal komputer; atau gunakan lingkungan pengembangan lokal yang menyediakan preview.
+
+Tanpa konfigurasi Supabase, halaman autentikasi akan tetap bisa dibuka untuk membantu setup, tetapi login dan akses data tidak dapat berfungsi. Halaman yang memerlukan akun akan mengarahkan pengguna ke halaman login.
+
+## Pemeriksaan kualitas
+
+Jalankan perintah berikut sebelum menyatakan perubahan siap:
 
 ```bash
-npm install
-npm run dev
-```
-
-Buka `http://localhost:3000`.
-
-Build produksi:
-
-```bash
+npm run lint
+npx tsc --noEmit
 npm run build
-npm run start
 ```
 
-## Deploy gratis (opsi)
+Tes yang membutuhkan Supabase perlu dijalankan lagi setelah kredensial dan skema database disiapkan. Jangan menyebut pengujian berhasil jika perintahnya belum benar-benar dijalankan.
 
-1. Unggah folder proyek ini ke repository GitHub milik Anda.
-2. Hubungkan repository ke layanan hosting yang mendukung Next.js, misalnya Vercel.
-3. Ikuti proses impor dan deploy bawaan penyedia hosting. Paket gratis memiliki batas penggunaan dan ketentuan yang dapat berubah.
-4. Setelah deploy, uji tautan publik dari HP Android.
+## Modul utama yang tersedia
 
-## Menjadikan aplikasi lebih lengkap
+- Dashboard / beranda
+- Login, pendaftaran, pemulihan kata sandi, dan callback autentikasi
+- Data siswa
+- Kelas
+- Jadwal pelajaran
+- Kehadiran
+- Manifest dan service worker dasar untuk pengembangan PWA
 
-Tahap pengembangan yang disarankan:
+Sebagian layanan lain masih berupa tampilan atau pemberitahuan demo dan harus dihubungkan ke database serta diuji sebelum dipakai.
 
-1. **Fondasi UI** — dashboard responsif, navigasi, layanan demo (tahap ini).
-2. **Database & autentikasi** — pilih penyedia, skema sekolah, siswa, guru, orang tua, kelas, dan tahun ajaran.
-3. **Hak akses** — role-based access control, validasi server-side, dan audit log.
-4. **Akademik** — jadwal, presensi, tugas, nilai, rapor, kalender, pengumuman.
-5. **Administrasi** — data siswa, pembayaran (tanpa menyimpan data kartu), perpustakaan, komunikasi.
-6. **PWA** — ikon aplikasi, service worker/offline strategy, instalasi dan pengujian lintas perangkat.
-7. **Keamanan & rilis** — pengujian, backup, privasi, pengelolaan rahasia, serta prosedur pemulihan.
+## Keamanan dan privasi
 
-## Prinsip keamanan
+- Gunakan kebijakan RLS pada setiap tabel yang menyimpan data siswa, guru, orang tua, kelas, jadwal, presensi, nilai, atau pengumuman.
+- Validasi hak akses di server/database, bukan hanya dengan menyembunyikan menu.
+- Jangan commit `.env.local`, kata sandi, token, atau kunci privat.
+- Terapkan pengumpulan data minimum dan kebijakan retensi yang sesuai untuk data anak/siswa.
+- Gunakan akun uji dan data dummy selama pengembangan.
 
-- Jangan masukkan kata sandi, token, atau kunci privat ke repository.
-- Jangan menaruh kunci server di variabel `NEXT_PUBLIC_*`.
-- Data anak/siswa adalah data sensitif: batasi akses, kumpulkan seperlunya, dan dapatkan persetujuan serta dasar pemrosesan yang sesuai.
-- Jangan gunakan data demo untuk keputusan sekolah nyata.
+## Tahap berikutnya
 
-## Struktur
-
-```text
-app/
-  globals.css
-  layout.tsx
-  page.tsx
-public/
-  manifest.json
-.env.example
-README.md
-package.json
-tsconfig.json
-next.config.ts
-eslint.config.mjs
-```
-
-## Catatan
-
-Nama dan informasi pada dashboard hanyalah data contoh. Tombol layanan memberi pemberitahuan demo, bukan melakukan transaksi atau mengakses data siswa.
+1. Menuntaskan perbaikan dan pengujian lokal.
+2. Memvalidasi skema Supabase, RLS, serta alur setiap peran.
+3. Menguji responsif dan aksesibilitas di perangkat nyata.
+4. Baru setelah semua pemeriksaan disetujui, merencanakan deployment dan publikasi. Deployment tidak termasuk tahap saat ini.
