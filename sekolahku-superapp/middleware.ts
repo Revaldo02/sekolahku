@@ -51,7 +51,7 @@ export async function middleware(request: NextRequest) {
   const aturanPeran: Record<string, string[]> = {
     '/admin': ['admin'],
     '/guru': ['admin', 'teacher'],
-    '/siswa': ['admin', 'teacher', 'student'],
+    '/siswa': ['admin', 'administrator', 'teacher', 'guru', 'student', 'siswa'],
     '/orang-tua': ['admin', 'parent'],
   }
 
@@ -77,7 +77,7 @@ export async function middleware(request: NextRequest) {
     })
   }
 
-  if (!aturanPeran[areaTerbatas].includes(profile.role)) {
+  const normalizedRole = (profile.role ?? '').trim().toLowerCase()\n  if (!aturanPeran[areaTerbatas].includes(normalizedRole)) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
