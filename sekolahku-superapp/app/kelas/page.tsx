@@ -16,6 +16,9 @@ export default function KelasPage() {
   const [saving, setSaving] = useState(false)
   const [canManage, setCanManage] = useState(false)
   const [message, setMessage] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editGrade, setEditGrade] = useState('')
 
   async function refresh() {
     const { data, error } = await getSupabase().from('classes').select('id,name,grade_level,created_at').order('name')
@@ -64,6 +67,29 @@ export default function KelasPage() {
     } finally { setSaving(false) }
   }
 
+  function beginEdit(c: SchoolClass) {
+    setEditingId(c.id)
+    setEditName(c.name)
+    setEditGrade(c.grade_level ?? '')
+    setMessage('')
+  }
+
+  async function saveEdit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (!editingId || !editName.trim()) return
+    setSaving(true)
+    setMessage('')
+    try {
+      const { error } = await getSupabase().from('classes').update({ name: editName.trim(), grade_level: editGrade.trim() || null }).eq('id', editingId)
+      if (error) throw error
+      setEditingId(null)
+      await refresh()
+      setMessage('Perubahan kelas berhasil disimpan. Jadwal yang terkait tetap menggunakan kelas ini.')
+    } catch (err) {
+      setMessage(err && typeof err === 'object' && 'message' in err ? String(err.message) : 'Perubahan kelas gagal disimpan.')
+    } finally { setSaving(false) }
+  }
+
   return <main style={{ minHeight: '100vh', background: '#f5f7fb', color: '#26334c', fontFamily: 'Arial,sans-serif', padding: 20 }}>
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
       <Link href="/" style={{ color: '#4267e8' }}>← Kembali ke Beranda</Link>
@@ -84,9 +110,9 @@ export default function KelasPage() {
       </section>}
       <section style={{ background: '#fff', padding: 20, borderRadius: 14 }}>
         <h2>Daftar kelas ({classes.length})</h2>
-        {loading ? <p>Memuat kelas…</p> : classes.length ? <div style={{ display: 'grid', gap: 10 }}>{classes.map(c => <article key={c.id} style={{ padding: 14, border: '1px solid #e8edf4', borderRadius: 10, display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}><div><b>{c.name}</b><p style={{ margin: '5px 0 0', color: '#718096', fontSize: 13 }}>{c.grade_level ? `Tingkat ${c.grade_level}` : 'Tingkat belum diisi'}</p></div><Link href="/jadwal" style={{ color: '#4267e8', alignSelf: 'center' }}>Lihat jadwal →</Link></article>)}</div> : <p>Belum ada kelas. Tambahkan kelas melalui formulir di atas jika akun Anda memiliki izin.</p>}
+        {loading ? <p>Memuat kelas…</p> : classes.length ? <div style={{ display: 'grid', gap: 10 }}>{classes.map(c => <article key={c.id} style={{ padding: 14, border: '1px solid #e8edf4', borderRadius: 10 }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>{editingId === c.id ? <form onSubmit={saveEdit} style={{ flex: '1 1 240px' }}><label>Nama kelas<input required value={editName} onChange={e => setEditName(e.target.value)} style={inputStyle} /></label><label>Tingkat kelas<input value={editGrade} onChange={e => setEditGrade(e.target.value)} placeholder="Contoh: 11" style={inputStyle} /></label><div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}><button disabled={saving} style={buttonStyle}>{saving ? 'Menyimpan…' : 'Simpan perubahan'}</button><button type="button" disabled={saving} onClick={() => setEditingId(null)} style={{ ...buttonStyle, background: '#64748b' }}>Batal</button></div></form> : <><div><b>{c.name}</b><p style={{ margin: '5px 0 0', color: '#718096', fontSize: 13 }}>{c.grade_level ? `Tingkat ${c.grade_level}` : 'Tingkat belum diisi'}</p></div>{canManage && <button type="button" onClick={() => beginEdit(c)} style={{ ...buttonStyle, padding: '8px 12px' }}>Ubah kelas</button>}<Link href="/jadwal" style={{ color: '#4267e8' }}>Lihat jadwal →</Link></>}</div></article>)}</div> : <p>Belum ada kelas. Tambahkan kelas melalui formulir di atas jika akun Anda memiliki izin.</p>}
       </section>
-      <p style={{ color: '#718096', fontSize: 12, marginTop: 16 }}>Untuk saat ini halaman ini mendukung tambah dan lihat kelas. Mengubah atau menghapus kelas belum tersedia agar jadwal yang sudah tersimpan tidak rusak.</p>
+      <p style={{ color: '#718096', fontSize: 12, marginTop: 16 }}>Anda dapat menambah, melihat, dan mengubah nama/tingkat kelas. Penghapusan kelas sengaja belum disediakan agar jadwal terkait tidak terhapus atau kehilangan hubungan.</p>
     </div>
   </main>
 }
