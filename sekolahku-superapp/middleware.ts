@@ -77,7 +77,8 @@ export async function middleware(request: NextRequest) {
     })
   }
 
-  const normalizedRole = (profile.role ?? '').trim().toLowerCase()\n  if (!aturanPeran[areaTerbatas].includes(normalizedRole)) {
+  const normalizedRole = (profile.role ?? '').trim().toLowerCase()
+  if (!aturanPeran[areaTerbatas].includes(normalizedRole)) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
