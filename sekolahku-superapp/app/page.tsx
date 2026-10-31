@@ -9,7 +9,7 @@ import { Activity, Bell, BookOpen, CalendarDays, CheckCircle2, ChevronRight, Cli
 type Profile = { full_name: string | null; role: string | null }
 type Announcement = { id: string; title: string; body: string; created_at: string }
 
-const roleLabels: Record<string, string> = { admin: 'Admin', administrator: 'Admin', guru: 'Guru', teacher: 'Guru', siswa: 'Siswa', student: 'Siswa', orang_tua: 'Orang Tua', orangtua: 'Orang Tua', parent: 'Orang Tua' }
+const roleLabels: Record<string, string> = { admin: 'Admin', guru: 'Guru', siswa: 'Siswa', orang_tua: 'Orang Tua' }
 const services = [
   { title: 'Jadwal Pelajaran', desc: 'Jadwal kelas dan mata pelajaran', icon: CalendarDays },
   { title: 'Kehadiran', desc: 'Catatan presensi', icon: ClipboardCheck },

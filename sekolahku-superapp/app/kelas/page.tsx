@@ -36,7 +36,7 @@ export default function KelasPage() {
           supabase.rpc('current_user_role')
         ])
         const role = typeof roleData === 'string' && roleData ? roleData : (profile?.role ?? '')
-        if (alive) setCanManage(['admin', 'teacher'].includes(role))
+        if (alive) setCanManage(['admin', 'guru'].includes(role))
         await refresh()
       } catch (err) {
         if (alive) setMessage(err && typeof err === 'object' && 'message' in err ? String(err.message) : 'Data kelas gagal dimuat.')

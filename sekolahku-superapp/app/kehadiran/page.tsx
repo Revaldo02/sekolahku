@@ -50,7 +50,7 @@ export default function KehadiranPage() {
     if (error || !user) { window.location.href = '/login'; return }
     const [{ data: profile }, { data: role }] = await Promise.all([db.from('profiles').select('role').eq('id', user.id).maybeSingle(), db.rpc('current_user_role')])
     const resolvedRole = typeof role === 'string' && role ? role : profile?.role ?? ''
-    if (alive) setCanManage(['admin','teacher'].includes(resolvedRole))
+    if (alive) setCanManage(['admin','guru'].includes(resolvedRole))
     await refresh()
    } catch (e) { if (alive) setMessage(e && typeof e === 'object' && 'message' in e ? String(e.message) : 'Data kehadiran gagal dimuat.') }
    finally { if (alive) setLoading(false) }
