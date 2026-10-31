@@ -86,6 +86,34 @@ export default function KelasPage() {
     } finally { setSaving(false) }
   }
 
+  async function deleteClass(c: SchoolClass) {
+    if (!window.confirm(`Hapus kelas ${c.name}? Tindakan ini tidak bisa dibatalkan.`)) return
+    setSaving(true)
+    setMessage('')
+    try {
+      const db = getSupabase()
+      // Pemeriksaan relasi di sisi aplikasi agar data siswa dan jadwal tidak kehilangan kelasnya.
+      const [{ count: studentCount, error: studentError }, { count: scheduleCount, error: scheduleError }] = await Promise.all([
+        db.from('students').select('id', { count: 'exact', head: true }).eq('class_id', c.id),
+        db.from('schedules').select('id', { count: 'exact', head: true }).eq('class_id', c.id),
+      ])
+      if (studentError) throw studentError
+      if (scheduleError) throw scheduleError
+      if ((studentCount ?? 0) > 0 || (scheduleCount ?? 0) > 0) {
+        setMessage(`Kelas ${c.name} belum bisa dihapus karena masih memiliki ${studentCount ?? 0} siswa dan ${scheduleCount ?? 0} jadwal. Pindahkan atau hapus data tersebut terlebih dahulu.`)
+        return
+      }
+      const { error } = await db.from('classes').delete().eq('id', c.id)
+      if (error) throw error
+      await refresh()
+      setMessage(`Kelas ${c.name} berhasil dihapus.`)
+    } catch (err) {
+      setMessage(err && typeof err === 'object' && 'message' in err ? String(err.message) : 'Kelas gagal dihapus. Coba lagi.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return <main style={{ minHeight: '100vh', background: '#f5f7fb', color: '#26334c', fontFamily: 'Arial,sans-serif', padding: 20 }}>
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
       <Link href="/" style={{ color: '#4267e8' }}>← Kembali ke Beranda</Link>
@@ -104,9 +132,9 @@ export default function KelasPage() {
       </section>}
       <section style={{ background: '#fff', padding: 20, borderRadius: 14 }}>
         <h2>Daftar kelas ({classes.length})</h2>
-        {loading ? <p>Memuat kelas…</p> : classes.length ? <div style={{ display: 'grid', gap: 10 }}>{classes.map(c => <article key={c.id} style={{ padding: 14, border: '1px solid #e8edf4', borderRadius: 10 }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>{editingId === c.id ? <form onSubmit={saveEdit} style={{ flex: '1 1 240px' }}><label>Nama kelas<input required value={editName} onChange={e => setEditName(e.target.value)} style={inputStyle} /></label><div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}><button disabled={saving} style={buttonStyle}>{saving ? 'Menyimpan…' : 'Simpan perubahan'}</button><button type="button" disabled={saving} onClick={() => setEditingId(null)} style={{ ...buttonStyle, background: '#64748b' }}>Batal</button></div></form> : <><div><b>{c.name}</b></div>{canManage && <button type="button" onClick={() => beginEdit(c)} style={{ ...buttonStyle, padding: '8px 12px' }}>Ubah kelas</button>}<Link href="/jadwal" style={{ color: '#4267e8' }}>Lihat jadwal →</Link></>}</div></article>)}</div> : <p>Belum ada kelas. Tambahkan kelas melalui formulir di atas jika akun Anda memiliki izin.</p>}
+        {loading ? <p>Memuat kelas…</p> : classes.length ? <div style={{ display: 'grid', gap: 10 }}>{classes.map(c => <article key={c.id} style={{ padding: 14, border: '1px solid #e8edf4', borderRadius: 10 }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>{editingId === c.id ? <form onSubmit={saveEdit} style={{ flex: '1 1 240px' }}><label>Nama kelas<input required value={editName} onChange={e => setEditName(e.target.value)} style={inputStyle} /></label><div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}><button disabled={saving} style={buttonStyle}>{saving ? 'Menyimpan…' : 'Simpan perubahan'}</button><button type="button" disabled={saving} onClick={() => setEditingId(null)} style={{ ...buttonStyle, background: '#64748b' }}>Batal</button></div></form> : <><div><b>{c.name}</b></div>{canManage && <button type="button" onClick={() => beginEdit(c)} style={{ ...buttonStyle, padding: '8px 12px' }}>Ubah kelas</button>}{canManage && <button type="button" disabled={saving} onClick={() => void deleteClass(c)} style={{ ...buttonStyle, padding: '8px 12px', background: '#c53030' }}>Hapus</button>}<Link href="/jadwal" style={{ color: '#4267e8' }}>Lihat jadwal →</Link></>}</div></article>)}</div> : <p>Belum ada kelas. Tambahkan kelas melalui formulir di atas jika akun Anda memiliki izin.</p>}
       </section>
-      <p style={{ color: '#718096', fontSize: 12, marginTop: 16 }}>Anda dapat menambah, melihat, dan mengubah nama kelas. Penghapusan kelas sengaja belum disediakan agar jadwal terkait tidak terhapus atau kehilangan hubungan.</p>
+      <p style={{ color: '#718096', fontSize: 12, marginTop: 16 }}>Admin dan guru dapat menambah, mengubah, dan menghapus kelas. Kelas yang masih memiliki siswa atau jadwal tidak dapat dihapus.</p>
     </div>
   </main>
 }
