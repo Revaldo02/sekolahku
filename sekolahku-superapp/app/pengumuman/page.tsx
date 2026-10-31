@@ -35,6 +35,7 @@ export default function PengumumanPage() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [message, setMessage] = useState('')
+  const [canManage, setCanManage] = useState(false)
 
   async function loadAnnouncements(isRefresh = false) {
     if (isRefresh) setRefreshing(true)
@@ -47,6 +48,9 @@ export default function PengumumanPage() {
         window.location.href = '/login'
         return
       }
+
+      const { data: role } = await db.rpc('current_user_role')
+      setCanManage(role === 'admin' || role === 'teacher')
 
       const { data, error } = await db
         .from('announcements')
@@ -94,9 +98,12 @@ export default function PengumumanPage() {
 
         <section style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
           <div style={{ color: '#718096', fontSize: 13 }}>{items.length} pengumuman tersedia</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          {canManage && <Link href="/kelola-pengumuman" style={{ padding: '10px 13px', borderRadius: 9, background: '#4267e8', color: '#fff', textDecoration: 'none', fontWeight: 700 }}>Kelola pengumuman</Link>}
           <button type="button" onClick={() => void loadAnnouncements(true)} disabled={loading || refreshing} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 13px', border: '1px solid #dbe2ee', borderRadius: 9, background: '#fff', color: '#26334c', fontWeight: 700 }}>
             <RefreshCw size={16} /> {refreshing ? 'Memuat ulang…' : 'Muat ulang'}
           </button>
+          </div>
         </section>
 
         <label style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fff', border: '1px solid #e8edf4', borderRadius: 12, padding: '0 14px', marginBottom: 18 }}>
