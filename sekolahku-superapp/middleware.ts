@@ -60,6 +60,8 @@ export async function middleware(request: NextRequest) {
       '/guru': ['admin', 'guru'],
       '/siswa': ['admin', 'guru', 'siswa'],
       '/orang-tua': ['admin', 'orang_tua'],
+      '/verifikasi-orang-tua': ['admin', 'guru'],
+      '/kelola-guru': ['admin', 'guru'],
     }
 
     const restrictedArea = Object.keys(roleRules).find(

@@ -105,6 +105,9 @@ export default function HomePage() {
           <Link href="/jadwal" className="sk-nav" style={{ textDecoration: 'none' }}><BookOpen size={18}/> Jadwal Pelajaran</Link>
           <Link href="/kehadiran" className="sk-nav" style={{ textDecoration: 'none' }}><ClipboardCheck size={18}/> Kehadiran</Link>
           <Link href="/pengumuman" className="sk-nav" style={{ textDecoration: 'none' }}><Megaphone size={18}/> Pengumuman</Link>
+          {['admin', 'guru'].includes(profile?.role ?? '') && <Link href="/verifikasi-orang-tua" className="sk-nav" style={{ textDecoration: 'none' }}><ShieldCheck size={18}/> Verifikasi Orang Tua</Link>}
+          {['admin', 'guru'].includes(profile?.role ?? '') && <Link href="/kelola-guru" className="sk-nav" style={{ textDecoration: 'none' }}><GraduationCap size={18}/> Kelola Guru</Link>}
+          {['admin', 'orang_tua'].includes(profile?.role ?? '') && <Link href="/orang-tua" className="sk-nav" style={{ textDecoration: 'none' }}><UserRound size={18}/> Anak Saya</Link>}
           <button className="sk-nav" onClick={() => setNotice('Modul layanan sedang disiapkan dan belum menerima transaksi nyata.')}><Grid2X2 size={18}/> Layanan</button>
           <button className="sk-nav" onClick={() => setNotice('Fitur komunikasi belum terhubung.')}><MessageCircle size={18}/> Komunikasi</button>
           <button className="sk-nav" onClick={() => setNotice('Pengaturan akun akan ditambahkan pada tahap berikutnya.')}><Settings size={18}/> Pengaturan</button>
