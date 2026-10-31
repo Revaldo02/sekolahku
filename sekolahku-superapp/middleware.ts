@@ -54,11 +54,12 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/', request.url))
     }
 
+    // Nama role harus sama dengan nilai di database: admin, guru, siswa, orang_tua.
     const roleRules: Record<string, string[]> = {
-      '/admin': ['admin', 'administrator'],
-      '/guru': ['admin', 'administrator', 'teacher', 'guru'],
-      '/siswa': ['admin', 'administrator', 'teacher', 'guru', 'student', 'siswa'],
-      '/orang-tua': ['admin', 'administrator', 'parent', 'orang_tua', 'orangtua'],
+      '/admin': ['admin'],
+      '/guru': ['admin', 'guru'],
+      '/siswa': ['admin', 'guru', 'siswa'],
+      '/orang-tua': ['admin', 'orang_tua'],
     }
 
     const restrictedArea = Object.keys(roleRules).find(

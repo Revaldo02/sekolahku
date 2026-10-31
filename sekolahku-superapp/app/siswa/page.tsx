@@ -34,7 +34,7 @@ export default function SiswaPage() {
   const {data:{user},error} = await db.auth.getUser()
   if (error || !user) { window.location.href='/login'; return }
   const [{data:p},{data:r}] = await Promise.all([db.from('profiles').select('role').eq('id',user.id).maybeSingle(),db.rpc('current_user_role')])
-  if (alive) setCanManage(['admin','teacher'].includes(typeof r==='string' && r ? r : p?.role ?? ''))
+  if (alive) setCanManage(['admin','guru'].includes(typeof r==='string' && r ? r : p?.role ?? ''))
   await refresh()
  } catch(e) { if(alive) setMessage(e && typeof e==='object' && 'message' in e ? String(e.message) : 'Data siswa gagal dimuat.') } finally { if(alive) setLoading(false) } }
  load(); return()=>{alive=false} }, [])

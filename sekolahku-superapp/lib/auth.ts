@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
-export type UserRole = 'admin' | 'teacher' | 'student' | 'parent'
+export type UserRole = 'admin' | 'guru' | 'siswa' | 'orang_tua'
 
 export async function requireRole(allowedRoles: UserRole[]) {
   const supabase = await createSupabaseServerClient()
